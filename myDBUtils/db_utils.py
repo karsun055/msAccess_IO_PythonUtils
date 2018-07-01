@@ -76,6 +76,7 @@ def get_selective_recs(conn,table_name,field_names,operands, values):
     c = conn.cursor()
     sql = " SELECT * FROM " + table_name + " WHERE "
     criteria_no = 0
+    multiple_criteria = False
     
     if (len(field_names) > 1):
         multiple_criteria = True
@@ -95,7 +96,7 @@ def get_selective_recs(conn,table_name,field_names,operands, values):
         if (multiple_criteria and criteria_no < len(field_names)):
             sql = sql + " AND "
         
-    print(sql)
+#    print(sql)
     c.execute(sql)
 
     columns = [column[0] for column in c.description]
@@ -164,10 +165,95 @@ def delete_selective_recs(conn,table_name,field_names,operands, values):
         if (multiple_criteria and criteria_no < len(field_names)):
             sql = sql + " AND "
         
-    print(sql)
+#    print(sql)
     c.execute(sql)
     conn.commit()
 
+def get_unique_values(conn, table_name, field_names, having_names, operands, values):
+    
+#===============================================================================
+# SELECT StooqCrossTabTable.Ticker, StooqCrossTabTable.CurDate
+# FROM StooqCrossTabTable
+# GROUP BY StooqCrossTabTable.Ticker, StooqCrossTabTable.CurDate
+# HAVING (((StooqCrossTabTable.Ticker)>"A") AND ((StooqCrossTabTable.CurDate)>#3/17/2018#))
+# ORDER BY StooqCrossTabTable.Ticker, StooqCrossTabTable.CurDate;
+#===============================================================================
+    c = conn.cursor()
+    field_no = 0
+    sql = "SELECT "
+    
+    multiple_fields = False
+    if (len(field_names) > 1):
+        multiple_fields = True
+        
+    for field_name in field_names:
+        field_no = field_no + 1
+        sql = sql + field_name
+        if (multiple_fields and field_no < len(field_names)):
+            sql = sql + " , "
+            
+    sql = sql + " FROM " + table_name +" GROUP BY "
+
+    field_no = 0    
+    for field_name in field_names:
+        field_no = field_no + 1
+        sql = sql + field_name
+        if (multiple_fields and field_no < len(field_names)):
+            sql = sql + " , "
+
+    if (len(having_names) > 0):
+        sql = sql + "  HAVING ( "
+        critera_list = list(zip(having_names, operands, values))
+        column_details = getTableColumnsDetails(conn, table_name)
+
+        having_no = 0            
+        multiple_having = False
+        if (len(having_names) > 1):
+            multiple_having = True
+        
+        for criteria in critera_list:
+            having_no = having_no + 1
+            
+            sql = sql + "( [" + criteria[0] +"] " + criteria[1] + " "
+            field_type = getFieldType(criteria[0], column_details)
+            
+            if (field_type ==  str):
+                sql = sql + "'" + criteria[2] + "' )"
+    
+            if (field_type ==  datetime.datetime):
+                sql = sql + criteria[2] + " )"
+                                      
+            if (multiple_having and having_no < len(having_names)):
+                sql = sql + " AND "
+        sql = sql + " ) "
+
+
+    sql = sql + " ORDER BY "
+
+    field_no = 0    
+    for field_name in field_names:
+        field_no = field_no + 1
+        sql = sql + field_name
+        if (multiple_fields and field_no < len(field_names)):
+            sql = sql + " , "
+            
+    
+    
+#    print(sql)
+    c.execute(sql)
+
+    recs = []
+    for row in c.fetchall():
+        recs.append(dict(zip(field_names, row)))
+#    print(recs)    
+    return recs
+
+
+    
+    
+    
+    
+    
 def drop_a_column(conn, table_name, column_name):
     c = conn.cursor()
     sql = "ALTER TABLE " + table_name + " DROP COLUMN " + column_name
@@ -184,7 +270,7 @@ def get_record_count(conn,table_name):
 
 def execute_a_fetch_sql_stmt_directly(conn,sql):
     c = conn.cursor()
-    print(sql)
+#    print(sql)
     c.execute(sql)
     recs = c.fetchall()
     return recs

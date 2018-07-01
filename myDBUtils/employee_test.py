@@ -15,11 +15,30 @@ db_file = os.path.abspath(db_file)
 conn = dbu.createDBConnection(db_file)
 if conn == False:
     sys.exit()
+    
+table_name = "Employees"
+field_names = ["LastName", "Job"]
+ 
+#===============================================================================
+# having_names = []
+# operands = []
+# values = []
+#  
+#===============================================================================
 
-employees_list = []
-table_name = 'Employees'
+having_names = ["LastName","Job"]
+operands = ["=", "="]
+values = ["Sundar","Student"]
+ 
+outrecs = dbu.get_unique_values(conn, table_name, field_names,having_names,operands,values)
+#print(outrecs)
 
-employees_list = dbu.get_all_recs(conn, table_name)
+#===============================================================================
+# employees_list = []
+# table_name = 'Employees'
+# 
+# employees_list = dbu.get_all_recs(conn, table_name)
+#===============================================================================
 
 
 # for employee in employees_list:
